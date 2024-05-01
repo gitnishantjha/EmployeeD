@@ -93,10 +93,10 @@
     </div>
 </nav>
     <h3>Edit Employee Details</h3>
-    <form method="POST" action="/emps/<%= emp.id %>?_method=PUT">
+    <form method="POST" action="/emps/<%= emp.id %>?_method=PUT" enctype="multipart/form-data">
         <p>Name: <input type="text" name="name" value="<%= emp.name %>" required></p>
         <p>Email: <input type="email" name="email" value="<%= emp.email %>" required></p>
-        <p>Mobile: <input type="text" name="mobile" value="<%= emp.mobile %>" required></p>
+        <p>Mobile: <input type="text" name="mobile" value="<%= emp.mobile %>" pattern="[0-9]{10}" title="Please enter a 10-digit number" required></p>
         <p>Designation: 
             <select name="designation" required>
                 <option value="HR" <%= emp.designation.includes('HR') ? 'selected' : '' %>>HR</option>
@@ -113,8 +113,10 @@
         <% for(let course of ['MCA', 'BCA', 'BSC']) { %>
             <label><input type="checkbox" name="course" value="<%= course %>" <%= emp.course.includes(course) ? 'checked' : '' %>> <%= course %></label><br>
         <% } %>
+        <p><label for="image_url">Upload Image:</label> <input type="file" id="image_url" name="image_url" ></p>
         <button type="submit">Save Changes</button>
     </form>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
 </body>

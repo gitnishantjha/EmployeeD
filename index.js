@@ -1,3 +1,8 @@
+if(process.env.Node_ENV!="production"){
+    require("dotenv").config();
+}
+require('dotenv').config();
+console.log(process.env.SECRET);
 const express=require("express"); //express connection setup
 const app=express();
 const mongoose = require('mongoose');
@@ -10,7 +15,9 @@ const passport=require("passport");
 const LocalStrategy=require("passport-local");
 const User=require("./models/user.js");
 
-
+const multer  = require('multer');
+const {storage}=require("./cloudConfig")
+const upload = multer({storage});
 
 app.set("views",path.join(__dirname,"views"));
 app.set("view engine","ejs");
@@ -25,7 +32,7 @@ main().then(()=>{
 .catch(err => console.log(err));
 
 async function main() {
-  await mongoose.connect('mongodb://127.0.0.1:27017/employ');
+  await mongoose.connect('mongodb://127.0.0.1:27017/empData');
   // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
 }
 
@@ -61,13 +68,14 @@ passport.deserializeUser(User.deserializeUser());
 // res.send(registeredUser);
 // });
 
+//index Route
 app.get("/emps",async(req,res)=>{
     if(!req.isAuthenticated()){
         // req.flash("error","you must be loggedIn");
        return  res.redirect("/login")
     }
     let emps=await Emp.find();
-    console.log(emps);
+    // console.log(emps);
     res.render("index.ejs",{emps});
 });
 
@@ -81,9 +89,12 @@ app.get("/emps/new",(req,res)=>{
 
 
 //create route
-app.post("/emps",(req,res)=>{
-
-    let{name,email,mobile,designation,gender,course,image}=req.body;
+app.post("/emps",upload.single('image_url'),(req,res)=>{
+     let url=req.file.path;
+     let filename=req.file.filename;
+     console.log(url,"...",filename);
+    let{name,email,mobile,designation,gender,course}=req.body;
+    let image={url,filename};
     let newEmp=new Emp({
         name:name,
         email:email,
@@ -99,6 +110,7 @@ app.post("/emps",(req,res)=>{
         console.log(err);
     });
     res.redirect("/emps");
+   
 });
 
 //edit route
@@ -113,27 +125,33 @@ app.get("/emps/:id/edit",async(req,res)=>{
 });
 
 //update route
-app.put("/emps/:id", async (req, res) => {
-    if(!req.isAuthenticated()){
-        req.flash("error","you must be loggedIn");
-      return  res.redirect("/login")
-   }
+app.put("/emps/:id", upload.single('image_url'), async (req, res) => {
+    if (!req.isAuthenticated()) {
+        req.flash("error", "you must be loggedIn");
+        return res.redirect("/login");
+    }
     try {
         const { id } = req.params;
 
         // Extract update data from req.body
-        const { name, email, mobile, designation, gender, course, image } = req.body;
+        const { name, email, mobile, designation, gender, course } = req.body;
 
         // Construct the update object
-        const updateData = {
+        let updateData = {
             name,
             email,
             mobile,
             designation,
             gender,
             course,
-            image
         };
+
+        // Check if a file is uploaded
+        if (typeof req.file!=="undefined") {
+            const url = req.file.path;
+            const filename = req.file.filename;
+            updateData.image = { url, filename };
+        }
 
         // Update the employee by ID
         const updatedEmp = await Emp.findByIdAndUpdate(id, updateData, {
@@ -152,6 +170,52 @@ app.put("/emps/:id", async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
+
+// app.put("/emps/:id",upload.single('image_url'), async (req, res) => {
+//     if(!req.isAuthenticated()){
+//         req.flash("error","you must be loggedIn");
+//       return  res.redirect("/login")
+//    }
+//     try {
+//         const { id } = req.params;
+
+    
+//         let url=req.file.path;
+//         let filename=req.file.filename;
+//         let image={url,filename};
+
+//         console.log(url,"....",filename);
+//         // Extract update data from req.body
+//         const { name, email, mobile, designation, gender, course} = req.body;
+
+//         // Construct the update object
+//         const updateData = {
+//             name,
+//             email,
+//             mobile,
+//             designation,
+//             gender,
+//             course,
+//             image
+//         };
+
+//         // Update the employee by ID
+//         const updatedEmp = await Emp.findByIdAndUpdate(id, updateData, {
+//             runValidators: true, // Ensure validation rules are applied
+//             new: true // Return the updated document
+//         });
+
+//         if (!updatedEmp) {
+//             return res.status(404).send("Employee not found");
+//         }
+
+//         // Redirect to the list of employees
+//         res.redirect("/emps");
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).send("Internal Server Error");
+//     }
+// });
 
 
 

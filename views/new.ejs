@@ -96,11 +96,14 @@
         </div>
     </nav>
     <h3>Enter the new Employee Detail</h3>
-    <form method="POST" action="/emps">
+    <form method="POST" action="/emps" enctype="multipart/form-data">
         <p><label for="name">Name:</label> <input type="text" id="name" name="name" placeholder="Enter the name" required></p>
         <p><label for="email">Email:</label> <input type="email" id="email" name="email" placeholder="Enter the email" required></p>
-        <p><label for="mobile">Mobile:</label> <input type="text" id="mobile" name="mobile" placeholder="Enter the mobile" required></p>
-        <p><label for="designation">Designation:</label> 
+        <p>
+            <label for="mobile">Mobile:</label>
+            <input type="text" id="mobile" name="mobile" placeholder="Enter the mobile" pattern="[0-9]{10}" title="Please enter a 10-digit number" required>
+          </p>
+                  <p><label for="designation">Designation:</label> 
             <select id="designation" name="designation" required>
                 <option value="HR">HR</option>
                 <option value="Manager">Manager</option>
@@ -117,10 +120,12 @@
             <label><input type="checkbox" name="course" value="BCA"> BCA</label>
             <label><input type="checkbox" name="course" value="BSC"> BSC</label>
         </p>
-        <p><label for="image_url">Image URL:</label> <input type="url" id="image_url" name="image_url" placeholder="Enter the image URL"></p>
-        <p><label for="image_filename">Image Filename:</label> <input type="text" id="image_filename" name="image_filename" placeholder="Enter the image filename"></p>
+        <p><label for="image_url">Upload Image:</label> <input type="file" id="image_url" name="image_url"  required></p>
+        <!-- Add an image preview container -->
         <button type="submit">Submit</button>
     </form>
+
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
 </body>

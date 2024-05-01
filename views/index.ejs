@@ -120,7 +120,7 @@
         <tbody>
             <% for(let emp of emps){ %>
             <tr>
-                <td><%= emp.image %></td>
+                <td><img src="<%= emp.image.url%>"width="100" height="100"></td>
                 <td><%= emp.name %></td>
                 <td><%= emp.email %></td>
                 <td><%= emp.mobile %></td>
