@@ -69,10 +69,17 @@
         button:hover {
             background-color: #0056b3;
         }
+        /* #newEmp{   margin-top:-10px;  } */
     </style>
     
 </head>
 <body>
+    <% if(success&&success.length){ %>
+        <div class="alert alert-success alert-dismissible fade show col-6 offset-3" role="alert">
+            <%= success %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<%}%>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -86,7 +93,7 @@
                     <a class="nav-link" href="/emps">EmployeeList</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Hukum Gupta</a>
+                    <a class="nav-link" href="#"><%=user.username%></a>
 
                 </li>
             </ul>
@@ -97,49 +104,75 @@
             </ul>
         </div>
     </nav>
+   
     
     <h3>All Employees</h3>
-    <form method="GET" action="/emps/new">
-        <button>New Employee</button>
-    </form>
-    <br>
+        <!-- Display total count of employees -->
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <form method="GET" action="/emps/new" style="display: inline-block;">
+                <button>New Employee</button>
+            </form>
+            <form class="d-flex" role="search" action="emps/search" method="GET">
+                <input class="form-control me-2" type="search" name="query" placeholder="Search" aria-label="Search">
+                <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+            <p id="cntEmp" style="display: inline-block; margin-top: 30px;margin-right: 20px; font-weight: bold; color: #007bff;">Total Employees: <span id="totalEmployees"></span></p>
+        </div>
+        
+        <br>
+    
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Designation</th>
+                    <th>Gender</th>
+                    <th>Search Course</th>
+                    <th>Created At</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% for(let i = 0; i < emps.length; i++){ %>
+                <tr>
+                    <td><%= i + 1 %></td>
+                    <td><img src="<%= emps[i].image.url %>" width="100" height="100"></td>
+                    <td><%= emps[i].name %></td>
+                    <td><%= emps[i].email %></td>
+                    <td><%= emps[i].mobile %></td>
+                    <td><%= emps[i].designation %></td>
+                    <td><%= emps[i].gender %></td>
+                    <td><%= emps[i].course %></td>
+                    <td><%= emps[i].createdAt %></td>
+                    <td>
+                        <form method="GET" action="/emps/<%= emps[i].id %>/edit">
+                            <button class="edit">Edit</button>
+                        </form>
+                        <br>
+                        <form method="POST" action="/emps/<%= emps[i].id %>?_method=DELETE">
+                            <button class="delete">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                <% } %>
+            </tbody>
+        </table>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Image</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Designation</th>
-                <th>Gender</th>
-                <th>Search Course</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% for(let emp of emps){ %>
-            <tr>
-                <td><img src="<%= emp.image.url%>"width="100" height="100"></td>
-                <td><%= emp.name %></td>
-                <td><%= emp.email %></td>
-                <td><%= emp.mobile %></td>
-                <td><%= emp.designation %></td>
-                <td><%= emp.gender %></td>
-                <td><%= emp.course %></td>
-                <td>
-                    <form method="GET" action="/emps/<%= emp.id %>/edit">
-                        <button class="edit">Edit</button>
-                    </form>
-                    <br>
-                    <form method="POST" action="/emps/<%= emp.id %>?_method=DELETE">
-                        <button class="delete">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            <% } %>
-        </tbody>
-    </table>
+        <script>
+            // Fetch total count of employees
+            fetch('/emps/count')
+                .then(response => response.json())
+                .then(data => {
+                    // Update the total employees count in the HTML
+                    document.getElementById('totalEmployees').textContent = data.totalEmployees;
+                })
+                .catch(error => console.error('Error fetching total employees count:', error));
+        </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
 </body>
 </html>

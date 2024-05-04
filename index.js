@@ -7,14 +7,15 @@ const express=require("express"); //express connection setup
 const app=express();
 const mongoose = require('mongoose');
 const path=require("path");//ejs connection setup
-const Emp=require("./models/emp.js");//taking the data from chat.js from models directory.
+const Emp=require("./models/emp.js");//taking the data from employee from models directory.
+// const User=require("./models/user.js");
 const methodOverride=require("method-override");
 const session=require("express-session");
 const flash=require("connect-flash");
 const passport=require("passport");
 const LocalStrategy=require("passport-local");
 const User=require("./models/user.js");
-
+const ExpressError=require("./utils/ExpressError.js");
 const multer  = require('multer');
 const {storage}=require("./cloudConfig")
 const upload = multer({storage});
@@ -47,11 +48,10 @@ const sessionOptions={
     },
 };
 
-app.get("/",(req,res)=>{
-    res.render("dash.ejs");
-});
+
 app.use(session(sessionOptions));
 app.use(flash());
+
 app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
@@ -68,6 +68,44 @@ passport.deserializeUser(User.deserializeUser());
 // res.send(registeredUser);
 // });
 
+// app.all("*",(req,res,next)=>{
+//     next(new ExpressError(404,"page not found"));
+// });
+
+app.use((req,res,next)=>{
+    res.locals.success=req.flash("success");
+    res.locals.error=req.flash("error");
+    next();
+});
+
+app.get("/",async(req,res,next)=>{
+    if(!req.isAuthenticated()){
+       return  res.redirect("/login");
+    }
+    let user = await User.findById(req.user.id); 
+   
+    // console.log("loggedIn");
+    res.render("dash.ejs",{user});
+});
+
+// app.get("/register",(req,res)=>{
+//     let{name="anonymous"}=req.query;
+//     req.session.name=name;
+//     if(name==="anonymous"){
+//         req.flash("error","user not registered");
+//     }else{
+//         req.flash("success","you are loggedIn");
+//     }
+//     res.redirect("/hello");
+//   });
+
+//   app.get("/hello", (req,res)=>{
+//    // console.log(req.flash("success"));
+//     res.render("page.ejs",{name:req.session.name});
+//   });
+
+
+
 //index Route
 app.get("/emps",async(req,res)=>{
     if(!req.isAuthenticated()){
@@ -75,24 +113,54 @@ app.get("/emps",async(req,res)=>{
        return  res.redirect("/login")
     }
     let emps=await Emp.find();
+    let user = await User.findById(req.user.id); 
+    // let user=await User.find();
     // console.log(emps);
-    res.render("index.ejs",{emps});
+    // req.flash("success","successfully added");
+    res.render("index.ejs",{emps,user});
 });
 
-app.get("/emps/new",(req,res)=>{
+
+
+app.get("/emps/new",async(req,res)=>{
     if(!req.isAuthenticated()){
        // req.flash("error","you must be loggedIn");
-      return  res.redirect("/login")
+      return  res.redirect("/login");
    }
-    res.render("new.ejs",{});
+   let user = await User.findById(req.user.id); 
+    res.render("new.ejs",{user});
 });
+
+
+
+//counting employee
+app.get('/emps/count', async (req, res) => {
+    try {
+        // Get the count of documents in the collection
+        const totalEmployees = await Emp.countDocuments();
+
+        // Send the total count as JSON response
+        res.json({ totalEmployees });
+    } catch (error) {
+        console.error('Error fetching total employees count:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 
 //create route
-app.post("/emps",upload.single('image_url'),(req,res)=>{
+app.post("/emps",upload.single('image_url'),async(req,res)=>{
      let url=req.file.path;
      let filename=req.file.filename;
      console.log(url,"...",filename);
+     const existingEmployee = await Emp.findOne({ email: req.body.email });
+
+     if (existingEmployee) {
+         // If email already exists, render the form again with an error message
+         return res.render('new', { error: 'Email already in use', user: req.user });
+     }
+ 
     let{name,email,mobile,designation,gender,course}=req.body;
     let image={url,filename};
     let newEmp=new Emp({
@@ -109,9 +177,14 @@ app.post("/emps",upload.single('image_url'),(req,res)=>{
     }).catch((err)=>{
         console.log(err);
     });
+   
     res.redirect("/emps");
    
 });
+
+
+
+
 
 //edit route
 app.get("/emps/:id/edit",async(req,res)=>{
@@ -119,9 +192,10 @@ app.get("/emps/:id/edit",async(req,res)=>{
        // req.flash("error","you must be loggedIn");
       return  res.redirect("/login")
    }
+   let user = await User.findById(req.user.id); 
     let{id}=req.params;
     let emp=await Emp.findById(id);
-    res.render("edit.ejs",{emp});
+    res.render("edit.ejs",{emp,user});
 });
 
 //update route
@@ -164,6 +238,7 @@ app.put("/emps/:id", upload.single('image_url'), async (req, res) => {
         }
 
         // Redirect to the list of employees
+        req.flash("success","Employee details successfully updated");
         res.redirect("/emps");
     } catch (error) {
         console.error(error);
@@ -227,11 +302,11 @@ app.delete("/emps/:id",async (req,res)=>{
    }
     let {id}=req.params;
     let deletedEmp=await Emp.findByIdAndDelete(id);
-    console.log(deletedEmp);
+    req.flash("success","Employee deleted Successfully");
     res.redirect("/emps");
     });
 
-
+   
      app.get("/signup",(req,res)=>{
         res.render("signup.ejs",{});
      });
@@ -242,8 +317,8 @@ app.delete("/emps/:id",async (req,res)=>{
             const newUser=new User({email,username});
             const registeredUser=await User.register(newUser,password);
             console.log(registeredUser);
-            req.flash("success","welcome admin");
-            res.redirect("/emps");
+            req.flash("success","successfully SignedUp");
+            res.redirect("/login");
         } catch(e){
             req.flash("error",e.message);
             res.redirect("/signup");
@@ -259,6 +334,7 @@ app.delete("/emps/:id",async (req,res)=>{
      passport.authenticate('local',
      {failureRedirect:"/login"}),
      async(req,res)=>{
+        req.flash("success","you are loggedIn");
       res.redirect("/");
      });
 
@@ -269,9 +345,65 @@ app.delete("/emps/:id",async (req,res)=>{
             }
             res.redirect("/login");
         });
-     })
+     });
 
 
+    //  app.get("/emps/search", async (req, res) => {
+    //     try {
+    //         const query = req.query.query; // Get the search query from the URL parameter
+    
+    //         // Fetch employee data that matches the search query based on the username field
+    //         const emps = await Emp.find({ username: { $regex: new RegExp(query, 'i') } });
+    
+    //         res.render("search-results.ejs", { emps, query }); // Render search results template with filtered data
+    //     } catch (error) {
+    //         console.error('Error searching employees:', error);
+    //         res.status(500).send('Internal Server Error');
+    //     }
+    // });
+
+    // app.get("/emps/search", async (req, res) => {
+    //     try {
+    //         const query = req.query.query;
+    //         let user = await User.findById(req.user.id); 
+    //         const emps = await Emp.find({ name: { $regex: new RegExp(query, "i") } }); // Case-insensitive search by name
+    //         res.render("search.ejs", { emps,user,query });
+    //     } catch (error) {
+    //         console.error('Error searching employees:', error);
+    //         res.status(500).send('Internal Server Error');
+    //     }
+    // });
+    app.get('/emps/search', async (req, res) => {
+        if (!req.isAuthenticated()) {
+            req.flash("error", "You must be logged in");
+            return res.redirect("/login");
+        }
+    
+        const query = req.query.query;
+        let user = await User.findById(req.user.id);
+        try {
+            let filteredEmps;
+            if (query) {
+                // Search for employees by name or email based on the query
+                filteredEmps = await Emp.find({
+                    $or: [
+                        { name: { $regex: new RegExp(query, "i") } },
+                        { email: { $regex: new RegExp(query, "i") } }
+                    ]
+                });
+                // Render the filtered employees as HTML
+                res.render('search', { filteredEmps, user });
+            } else {
+                // If no query, return all employees
+                const allEmps = await Emp.find();
+                res.render('search', { filteredEmps: allEmps, user });
+            }
+        } catch (error) {
+            console.error('Error fetching filtered employees:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+    
 app.listen(3000,()=>{
     console.log("server is listening to port");
 });

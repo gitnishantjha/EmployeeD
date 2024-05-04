@@ -84,7 +84,7 @@
                     <a class="nav-link" href="/emps">EmployeeList</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">HukumGupta</a>
+                    <a class="nav-link" href="#"><%=user.username%></a>
              
                 </li>
             </ul>
@@ -95,6 +95,14 @@
             </ul>
         </div>
     </nav>
+    <% if(error && error.length) { %>
+        <div class="alert-container">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <%= error %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    <% } %>
     <h3>Enter the new Employee Detail</h3>
     <form method="POST" action="/emps" enctype="multipart/form-data">
         <p><label for="name">Name:</label> <input type="text" id="name" name="name" placeholder="Enter the name" required></p>
